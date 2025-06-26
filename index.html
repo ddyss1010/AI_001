@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>圖形驗證九宮格</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 16px;
+      background: radial-gradient(ellipse at 60% 20%, #22334a 0%, #101a2a 100%) fixed;
+      min-height: 100vh;
+      margin: 0;
+      box-sizing: border-box;
+    }
+    h2 {
+      font-size: 1.3rem;
+      margin-bottom: 18px;
+      color: #222;
+    }
+    .captcha-container {
+      background: rgba(255,255,255,0.04);
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 18px 8px 24px 8px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .grid img {
+      width: 100%;
+      aspect-ratio: 1/1;
+      object-fit: cover;
+      border: 2.5px solid #e0e0e0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #fafafa;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    }
+    .grid img.selected {
+      border-color: #4285F4;
+      box-shadow: 0 0 8px #4285F4;
+    }
+    button {
+      padding: 12px 0;
+      width: 90%;
+      max-width: 320px;
+      font-size: 1.1rem;
+      background: linear-gradient(90deg, #4285F4 60%, #34a853 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(66,133,244,0.08);
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    button:active {
+      background: linear-gradient(90deg, #357ae8 60%, #2c8c47 100%);
+      box-shadow: 0 1px 4px rgba(66,133,244,0.12);
+    }
+    @media (max-width: 600px) {
+      .captcha-container {
+        padding: 8px 2px 12px 2px;
+        border-radius: 10px;
+      }
+      h2 {
+        font-size: 1.1rem;
+      }
+      button {
+        font-size: 1rem;
+        padding: 11px 0;
+      }
+      .grid {
+        gap: 5px;
+      }
+    }
+    .serial-block {
+      margin-top: 18px;
+      background: #f3f6fa;
+      border-radius: 8px;
+      padding: 10px 0 12px 0;
+      box-shadow: 0 1px 4px rgba(66,133,244,0.04);
+    }
+    .serial-title {
+      font-size: 1rem;
+      color: #4285F4;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+    .serial-value {
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      color: #222;
+      font-family: 'Consolas', 'Courier New', monospace;
+    }
+    .topbar {
+      width: 100vw;
+      max-width: 100%;
+      background: linear-gradient(90deg, #0e3a5e 60%, #1e7bbf 100%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      height: 44px;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      font-size: 1rem;
+    }
+    .back-arrow {
+      font-size: 1rem;
+      cursor: pointer;
+      color: #fff;
+      user-select: none;
+      margin-right: 8px;
+    }
+    .member-name {
+      display: flex;
+      align-items: center;
+      font-size: 1rem;
+      font-weight: 500;
+      flex: 1;
+      justify-content: center;
+      color: #fff;
+    }
+    .member-balance {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #ffe600;
+      text-shadow: 0 1px 2px #2222;
+      margin-left: 8px;
+    }
+    @media (max-width: 600px) {
+      .topbar {
+        font-size: 0.95rem;
+        padding: 0 8px;
+        height: 40px;
+      }
+      .member-name, .member-balance {
+        font-size: 0.95rem;
+      }
+    }
+    .cooldown-block {
+      margin-top: 16px;
+      background: #fffbe6;
+      border-radius: 8px;
+      padding: 10px 0 12px 0;
+      box-shadow: 0 1px 4px rgba(255,230,0,0.06);
+      border: 1px solid #ffe066;
+    }
+    .cooldown-title {
+      font-size: 1rem;
+      color: #e6b800;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+    .cooldown-value {
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      color: #b8860b;
+      font-family: 'Consolas', 'Courier New', monospace;
+    }
+    .main-bg {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 0 32px 0;
+      background: none;
+    }
+    .card-panel {
+      background: linear-gradient(135deg, #1a2a3a 80%, #2c3e50 100%);
+      border-radius: 24px;
+      box-shadow: 0 8px 32px 0 rgba(0,0,0,0.25), 0 1.5px 8px 0 #00eaff33;
+      padding: 32px 18px 28px 18px;
+      max-width: 420px;
+      width: 98vw;
+      margin: 0 auto;
+      position: relative;
+      border: 1.5px solid #2e5c8a;
+      z-index: 2;
+    }
+    .captcha-gif {
+      display: block;
+      margin: 0 auto 18px auto;
+      max-width: 120px;
+      width: 60%;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px #00eaff33;
+      background: #fff;
+    }
+    .captcha-container h2 {
+      font-size: 1.2rem;
+      margin-bottom: 18px;
+      color: #fff;
+      text-shadow: 0 1px 4px #0008;
+    }
+    button[onclick="submitCaptcha()"] {
+      padding: 12px 0;
+      width: 90%;
+      max-width: 320px;
+      font-size: 1.1rem;
+      background: linear-gradient(90deg, #4285F4 60%, #34a853 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(66,133,244,0.08);
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s, box-shadow 0.2s;
+      margin-bottom: 10px;
+    }
+    button[onclick="submitCaptcha()"]:active {
+      background: linear-gradient(90deg, #357ae8 60%, #2c8c47 100%);
+      box-shadow: 0 1px 4px rgba(66,133,244,0.12);
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="back-arrow">&#8592; 返回</span>
+    <span class="member-name"><svg width="16" height="16" style="vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="#fff"/><path d="M12 14c-4.418 0-8 1.79-8 4v2h16v-2c0-2.21-3.582-4-8-4z" fill="#fff"/></svg>用戶001</span>
+    <span class="member-balance">NT $ <span id="balanceValue">1,003,215</span></span>
+  </div>
+  <div class="main-bg">
+    <div class="card-panel">
+      <img class="captcha-gif" src="https://upload.comethike.com/uploads/1745394406850.gif" alt="驗證動畫" />
+      <div class="captcha-container">
+        <h2>請點選所有含有汽車的圖片</h2>
+        <div class="grid" id="captchaGrid"></div>
+        <button onclick="submitCaptcha()">提交驗證</button>
+        <div class="serial-block">
+          <div class="serial-title">圖形訓練保存別號</div>
+          <div class="serial-value" id="serialValue"></div>
+        </div>
+        <div class="cooldown-block" id="cooldownBlock">
+          <div class="cooldown-title">圖形訓練冷卻倒數</div>
+          <div class="cooldown-value" id="cooldownValue">目前無冷卻，隨時可進行圖形訓練</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const images = [
+      { src: 'https://via.placeholder.com/100?text=車1', isCar: true },
+      { src: 'https://via.placeholder.com/100?text=樹', isCar: false },
+      { src: 'https://via.placeholder.com/100?text=車2', isCar: true },
+      { src: 'https://via.placeholder.com/100?text=山', isCar: false },
+      { src: 'https://via.placeholder.com/100?text=車3', isCar: true },
+      { src: 'https://via.placeholder.com/100?text=房', isCar: false },
+      { src: 'https://via.placeholder.com/100?text=橋', isCar: false },
+      { src: 'https://via.placeholder.com/100?text=車4', isCar: true },
+      { src: 'https://via.placeholder.com/100?text=湖', isCar: false }
+    ];
+
+    const grid = document.getElementById('captchaGrid');
+
+    function renderGrid() {
+      grid.innerHTML = '';
+      images.forEach((img, index) => {
+        const image = document.createElement('img');
+        image.src = img.src;
+        image.dataset.index = index;
+        image.alt = img.isCar ? '汽車圖片' : '其他圖片';
+        image.onclick = () => image.classList.toggle('selected');
+        grid.appendChild(image);
+      });
+    }
+
+    let currentStep = 1;
+    const maxStep = 3;
+
+    function resetGridSelection() {
+      document.querySelectorAll('.grid img').forEach(img => img.classList.remove('selected'));
+    }
+
+    function shuffleImages() {
+      for (let i = images.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [images[i], images[j]] = [images[j], images[i]];
+      }
+    }
+
+    let cooldownEndTime = null;
+    let cooldownTimer = null;
+    const cooldownBlock = document.getElementById('cooldownBlock');
+    const cooldownValue = document.getElementById('cooldownValue');
+    const submitBtn = document.querySelector('button[onclick="submitCaptcha()"]');
+
+    function startCooldown(hours = 3) {
+      cooldownEndTime = Date.now() + hours * 60 * 60 * 1000;
+      updateCooldownUI();
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = 0.5;
+      cooldownTimer = setInterval(updateCooldownUI, 1000);
+    }
+
+    function updateCooldownUI() {
+      const now = Date.now();
+      const diff = cooldownEndTime - now;
+      if (cooldownEndTime && diff > 0) {
+        const h = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, '0');
+        const m = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+        const s = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
+        cooldownValue.textContent = `${h}:${m}:${s}`;
+      } else {
+        clearInterval(cooldownTimer);
+        cooldownEndTime = null;
+        cooldownValue.textContent = '目前無冷卻，隨時可進行圖形訓練';
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = 1;
+      }
+    }
+
+    function submitCaptcha() {
+      const selected = document.querySelectorAll('img.selected');
+      const selectedIndexes = Array.from(selected).map(img => +img.dataset.index);
+
+      const correctIndexes = images
+        .map((img, i) => (img.isCar ? i : null))
+        .filter(i => i !== null);
+
+      const isCorrect = selectedIndexes.length === correctIndexes.length &&
+                        selectedIndexes.every(i => correctIndexes.includes(i));
+
+      if (isCorrect) {
+        if (currentStep < maxStep) {
+          alert(`驗證成功(${currentStep}/${maxStep})`);
+          currentStep++;
+          shuffleImages();
+          renderGrid();
+        } else {
+          alert(`驗證成功(${maxStep}/${maxStep})\n恭喜"用戶001"完成本次AI圖形訓練！`);
+          currentStep = 1;
+          shuffleImages();
+          renderGrid();
+          startCooldown(3);
+        }
+      } else {
+        alert('驗證失敗，請再試一次。');
+        shuffleImages();
+        renderGrid();
+      }
+    }
+
+    shuffleImages();
+    renderGrid();
+
+    // 產生北京時間（UTC+8）精確到分鐘，前面補四個零
+    function getBeijingSerial() {
+      const now = new Date();
+      // 取得 UTC 時間
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      const beijing = new Date(utc + 8 * 60 * 60 * 1000);
+      const year = beijing.getFullYear();
+      const month = String(beijing.getMonth() + 1).padStart(2, '0');
+      const day = String(beijing.getDate()).padStart(2, '0');
+      const hour = String(beijing.getHours()).padStart(2, '0');
+      const min = String(beijing.getMinutes()).padStart(2, '0');
+      return `0000${year}${month}${day}${hour}${min}`;
+    }
+    document.getElementById('serialValue').textContent = getBeijingSerial();
+
+    // 頁面載入時顯示初始狀態
+    updateCooldownUI();
+  </script>
+</body>
+</html> 
